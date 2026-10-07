@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>아주대학교병원 계약 수익성 계산기</title>
+<meta name="description" content="아주대학교병원 계약 수익성 계산기 — 가동률에 따른 최소 검사량, 계약금액 회수기간, 월 순수익 시뮬레이션">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="아주대학교병원 계약 수익성 계산기">
+<meta property="og:description" content="가동률에 따른 일·월 검사량 · 계약금액 회수기간 · 월 순수익 분석">
+<meta property="og:type" content="website">
+<style>
+:root{
+--black:#0a0a0a;--bg:#f4f7fc;--card:#ffffff;--ink:#0a0a0a;--mute:#5a6b85;--line:#dfe6f2;
+--navy:#0b2a5b;--blue:#1d4ed8;--blue2:#3b6ef0;--soft:#e9f0fe;--soft2:#f6f9ff;--accentline:#c7d8fb;
+--shadow:0 1px 2px rgba(10,25,60,.04),0 10px 28px rgba(10,25,60,.07)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+--black:#000000;--bg:#05080f;--card:#0e1524;--ink:#f7f9fc;--mute:#93a3bd;--line:#1e2b45;
+--navy:#cfe0ff;--blue:#5b8dff;--blue2:#7ba6ff;--soft:#111c31;--soft2:#0b1322;--accentline:#27406b;
+--shadow:0 1px 2px rgba(0,0,0,.5),0 12px 34px rgba(0,0,0,.5)}}
+:root[data-theme="dark"]{
+--black:#000000;--bg:#05080f;--card:#0e1524;--ink:#f7f9fc;--mute:#93a3bd;--line:#1e2b45;
+--navy:#cfe0ff;--blue:#5b8dff;--blue2:#7ba6ff;--soft:#111c31;--soft2:#0b1322;--accentline:#27406b;
+--shadow:0 1px 2px rgba(0,0,0,.5),0 12px 34px rgba(0,0,0,.5)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;
+font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR","Segoe UI",sans-serif;
+-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 18px 64px}
+
+/* HERO */
+header.hero{position:relative;overflow:hidden;background:var(--black);color:#fff;border-radius:22px;padding:34px 30px;margin-bottom:20px;box-shadow:var(--shadow)}
+header.hero::after{content:"";position:absolute;right:-70px;bottom:-110px;width:280px;height:280px;border-radius:50%;
+background:radial-gradient(circle at 35% 35%,var(--blue),transparent 68%);opacity:.6;pointer-events:none}
+.badge{display:inline-flex;align-items:center;gap:8px;font-size:.72rem;font-weight:800;letter-spacing:.08em;
+color:#fff;background:var(--blue);padding:6px 13px;border-radius:999px;text-transform:uppercase}
+.hero h1{margin:14px 0 8px;font-size:clamp(1.35rem,3.3vw,1.95rem);letter-spacing:-.02em;font-weight:800}
+.hero p{margin:0;color:rgba(255,255,255,.82);font-size:.95rem;max-width:70ch}
+.warn{margin-top:20px;padding:12px 16px;border-radius:12px;background:rgba(255,255,255,.08);
+border:1px solid rgba(255,255,255,.32);font-size:.85rem;font-weight:600;color:#fff;max-width:80ch}
+
+/* SECTIONS */
+section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:var(--shadow)}
+h2{margin:0 0 16px;font-size:1.05rem;font-weight:800;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+h2 .num{width:26px;height:26px;flex:0 0 auto;border-radius:9px;background:var(--blue);color:#fff;
+font-size:.82rem;font-weight:800;display:grid;place-items:center}
+h2 .tag{margin-left:auto;font-size:.68rem;font-weight:800;letter-spacing:.09em;color:var(--mute);
+border:1px solid var(--line);border-radius:999px;padding:4px 10px;text-transform:uppercase}
+h3.sub{margin:24px 0 12px;font-size:.8rem;font-weight:800;color:var(--mute);letter-spacing:.09em;text-transform:uppercase}
+h3.sub:first-of-type{margin-top:0}
+
+/* GRIDS */
+.grid{display:grid;gap:12px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.two>section{margin-bottom:0}
+@media(max-width:900px){.two{grid-template-columns:1fr}}
+
+/* KPI BOXES */
+.box{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--soft2)}
+.box small{display:block;color:var(--mute);font-size:.76rem;font-weight:700;margin-bottom:7px;letter-spacing:.01em}
+.box b{font-size:1.2rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em;word-break:keep-all}
+.box.o{background:var(--soft);border-color:var(--accentline)}
+.box.o b{color:var(--blue)}
+
+/* RESULT CARDS */
+.res{border-radius:16px;padding:20px;border:1px solid var(--line);background:var(--soft2);
+transition:transform .22s ease,box-shadow .22s ease}
+.res small{display:block;font-size:.78rem;font-weight:800;color:var(--mute);margin-bottom:8px}
+.res .big{font-size:clamp(1.45rem,4vw,1.95rem);font-weight:800;letter-spacing:-.02em;
+font-variant-numeric:tabular-nums;word-break:keep-all;line-height:1.2}
+.res .sub2{margin-top:8px;font-size:.92rem;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums}
+.res p{margin:12px 0 0;font-size:.8rem;color:var(--mute);line-height:1.55}
+.res.b{background:var(--black);border-color:var(--black);color:#fff}
+.res.b small{color:rgba(255,255,255,.68)}
+.res.b .big{color:#fff}
+.res.b .sub2{color:#9dc0ff}
+.res.b p{color:rgba(255,255,255,.62)}
+.res.hl{background:var(--blue);border-color:var(--blue);color:#fff}
+.res.hl small{color:rgba(255,255,255,.78)}
+.res.hl .big{color:#fff}
+.res.hl p{color:rgba(255,255,255,.8)}
+.res.pop{transform:translateY(-2px);box-shadow:0 14px 30px rgba(29,78,216,.18)}
+
+/* SLIDER */
+.slider-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.range-wrap{flex:1;min-width:240px}
+input[type=range]{width:100%;height:28px;accent-color:var(--blue);background:transparent;cursor:pointer;display:block}
+.ticks{display:flex;justify-content:space-between;color:var(--mute);font-size:.74rem;font-weight:600;margin-top:-2px}
+.pctbox{display:flex;align-items:baseline;gap:6px;border:2px solid var(--blue);border-radius:14px;padding:6px 14px;background:var(--card)}
+.pctbox input{width:74px;border:0;background:transparent;color:var(--ink);font-size:1.5rem;font-weight:800;
+text-align:right;outline:none;font-variant-numeric:tabular-nums;padding:0}
+.pctbox b{color:var(--blue);font-size:1.05rem;font-weight:800}
+.gauge{height:10px;border-radius:999px;background:var(--soft);border:1px solid var(--line);overflow:hidden;margin-top:16px}
+.gauge i{display:block;height:100%;width:0;background:var(--blue);border-radius:999px;transition:width .25s ease}
+.bedsline{margin:14px 0 0;font-size:.9rem;color:var(--mute)}
+.bedsline b{color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* TABLES */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:600px;font-size:.89rem}
+thead th{background:var(--black);color:#fff;font-weight:700;font-size:.78rem;letter-spacing:.02em;
+text-align:right;padding:12px 14px;white-space:nowrap;position:sticky;top:0}
+thead th:first-child{text-align:left}
+td{padding:11px 14px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;
+font-variant-numeric:tabular-nums}
+td:first-child{text-align:left;font-weight:700}
+tbody tr:nth-child(even) td{background:var(--soft2)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr.hl td{background:var(--soft);font-weight:800;color:var(--blue)}
+td small{display:block;color:var(--mute);font-weight:500;font-size:.72rem;white-space:normal;margin-top:2px}
+@media(max-width:640px){
+  .wrap{padding:16px 12px 48px}
+  header.hero{padding:26px 20px;border-radius:18px}
+  section{padding:18px 15px;border-radius:16px}
+  table{font-size:.82rem;min-width:520px}
+  thead th,td{padding:9px 10px}
+  td small{font-size:.68rem}
+}
+
+/* DETAIL LIST */
+dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 24px;margin:0}
+dl div{display:flex;justify-content:space-between;gap:14px;border-bottom:1px dashed var(--line);padding:9px 0}
+dt{color:var(--mute);font-size:.88rem}
+dd{margin:0;font-weight:800;font-variant-numeric:tabular-nums;text-align:right}
+
+/* FORMULAS + NOTES */
+details{border:1px solid var(--line);border-radius:14px;background:var(--soft2);padding:14px 16px}
+details summary{cursor:pointer;font-weight:800;color:var(--ink);font-size:.92rem;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"＋";color:var(--blue);font-weight:800;margin-right:8px}
+details[open] summary::before{content:"−"}
+.f{margin:10px 0;padding:12px 14px;background:var(--card);border-left:3px solid var(--blue);
+border-radius:10px;font-size:.88rem;line-height:1.6;border-top:1px solid var(--line);
+border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.f b{color:var(--blue)}
+.note{font-size:.85rem;color:var(--mute);background:var(--soft2);border:1px solid var(--line);
+border-left:3px solid var(--blue);padding:14px 16px;border-radius:12px;line-height:1.65}
+.note p{margin:6px 0}
+.note p:first-child{margin-top:0}
+.note p:last-child{margin-bottom:0}
+.note b{color:var(--ink)}
+.foot{margin:26px 0 0;text-align:center;font-size:.8rem;color:var(--mute)}
+
+/* PDF 저장 버튼 */
+.hero-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:22px;position:relative;z-index:1}
+.pdfbtn{display:inline-flex;align-items:center;gap:9px;border:0;border-radius:12px;padding:13px 20px;
+background:#fff;color:var(--black);font-size:.95rem;font-weight:800;font-family:inherit;cursor:pointer;
+box-shadow:0 6px 18px rgba(0,0,0,.35);transition:transform .18s ease,background .18s ease}
+.pdfbtn:hover{background:var(--blue);color:#fff;transform:translateY(-1px)}
+.pdfbtn:active{transform:translateY(0)}
+.pdfbtn .ico{font-size:1.05rem;line-height:1}
+.pdfhint{font-size:.78rem;color:rgba(255,255,255,.72)}
+.print-only{display:none}
+
+/* 인쇄 / PDF 저장 */
+@media print{
+  @page{size:A4;margin:12mm 10mm}
+  html,body{background:#fff!important}
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wrap{max-width:none;padding:0}
+  .print-only{display:block;font-size:.76rem;color:#444;border-bottom:1px solid #cbd5e1;
+    padding-bottom:8px;margin-bottom:14px;line-height:1.5}
+  .hero-actions,.pdfbtn,.pdfhint,.range-wrap,.gauge,.ticks,.foot{display:none!important}
+  header.hero{background:#0a0a0a!important;color:#fff!important;border-radius:12px;padding:18px 20px;
+    box-shadow:none;break-inside:avoid}
+  header.hero::after{display:none}
+  .hero h1{font-size:1.3rem}
+  .hero p{font-size:.85rem}
+  .warn{font-size:.78rem;margin-top:14px}
+  .pctbox{border:0!important;padding:0;background:transparent}
+  .pctbox input{width:52px;font-size:1.25rem;color:#0a0a0a}
+  .pctbox b{color:#0a0a0a}
+  section{box-shadow:none;border:1px solid #cbd5e1;border-radius:10px;padding:14px;break-inside:avoid}
+  .two{display:block}
+  .two>section{margin-bottom:12px}
+  h3.sub{margin:16px 0 8px}
+  .scroll{overflow:visible!important;border-radius:8px}
+  table{min-width:0!important;font-size:.72rem}
+  thead th{background:#0a0a0a!important;color:#fff!important;padding:7px 8px;position:static}
+  td{padding:6px 8px}
+  td small{font-size:.64rem}
+  .res,.box,.f,.note,dl>div{break-inside:avoid}
+  .res{background:#f6f9ff!important;border-color:#cbd5e1!important;color:#0a0a0a!important}
+  .res small,.res p{color:#4b5563!important}
+  .res .big{color:#0a0a0a!important}
+  .res.b{background:#0a0a0a!important;border-color:#0a0a0a!important}
+  .res.b .big{color:#fff!important}
+  .res.b small{color:rgba(255,255,255,.72)!important}
+  .res.b p{color:rgba(255,255,255,.72)!important}
+  .res.b .sub2{color:#9dc0ff!important}
+  .res.hl{background:#1d4ed8!important;border-color:#1d4ed8!important}
+  .res.hl .big{color:#fff!important}
+  .res.hl small{color:rgba(255,255,255,.8)!important}
+  .res.hl p{color:rgba(255,255,255,.85)!important}
+  .res.pop{transform:none;box-shadow:none}
+  .box.o{background:#e9f0fe!important;border-color:#c7d8fb!important}
+  details{background:#f6f9ff;break-inside:avoid}
+  details>summary{color:#0a0a0a}
+  details>div{display:block!important}
+  dl{gap:2px 20px}
+}
+#lock{position:fixed;inset:0;background:var(--black);display:grid;place-items:center;padding:20px;z-index:20}
+#lock .lb{background:var(--card);border-radius:20px;padding:32px 26px;width:100%;max-width:380px;text-align:center;
+box-shadow:0 28px 70px rgba(0,0,0,.55)}
+#lock .mark{width:52px;height:52px;margin:0 auto 14px;border-radius:15px;background:var(--blue);color:#fff;
+display:grid;place-items:center;font-size:1.4rem}
+#lock h2{justify-content:center;font-size:1.05rem;margin:0 0 6px;color:var(--ink)}
+#lock .hint{color:var(--mute);font-size:.85rem}
+#lock input{width:100%;padding:13px;font-size:1rem;border:2px solid var(--line);border-radius:12px;
+margin:16px 0 10px;background:var(--bg);color:var(--ink)}
+#lock input:focus{outline:none;border-color:var(--blue)}
+#lock button{width:100%;padding:13px;border:0;border-radius:12px;background:var(--blue);color:#fff;
+font-size:1rem;font-weight:800;cursor:pointer;transition:background .2s ease}
+#lock button:hover{background:var(--blue2)}
+#err{color:var(--blue);min-height:1.3em;font-size:.85rem;font-weight:700}
+.ed{border:1.5px solid var(--blue);border-radius:8px;padding:5px 6px;background:var(--card);color:var(--ink);font:inherit;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;max-width:100%}
+.ed:focus{outline:2px solid var(--accentline);outline-offset:1px}
+#tblc td,#tbl td{white-space:normal}
+.rstbtn{margin-top:10px;border:1.5px solid var(--blue);background:transparent;color:var(--blue);border-radius:10px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+.rstbtn:hover{background:var(--soft)}
+@media print{.rstbtn{display:none!important}}
+.keygrid{grid-template-columns:repeat(4,1fr)}
+.res.wide{grid-column:span 2}
+.wards{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:8px 22px;margin-top:2px}
+.wards div{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px dashed var(--line);padding:5px 0}
+.wards span{font-weight:700;color:var(--ink);font-size:.9rem}.wards span small{display:inline;margin:0 0 0 4px;font-weight:600;color:var(--mute);font-size:.72rem}
+.wards b{font-size:1.15rem;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(max-width:900px){.keygrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.keygrid{grid-template-columns:1fr}.res.wide{grid-column:auto}}
+.minbtn{display:inline-flex;align-items:center;gap:6px;border:0;cursor:pointer;font:inherit;font-size:.82rem;font-weight:800;color:#fff;background:var(--blue);padding:8px 16px;border-radius:999px;margin-bottom:12px;box-shadow:0 4px 14px rgba(29,78,216,.35);transition:transform .15s}
+.minbtn:hover{transform:translateY(-1px);background:var(--blue2)}
+#minView{display:none}
+#app.minmode #minView{display:block}
+#app.minmode>*:not(header.hero):not(#minView):not(.print-only){display:none!important}
+@media print{.minbtn{display:none!important}}
+</style>
+</head>
+<body>
+
+<div id="lock"><div class="lb">
+  <div class="mark">🔒</div>
+  <h2>아주대학교병원<br>계약 수익성 계산기</h2>
+  <div class="hint">비밀번호를 입력해 주세요</div>
+  <input id="pw" type="password" placeholder="비밀번호" autocomplete="off" aria-label="비밀번호">
+  <div id="err" role="alert"></div>
+  <button id="go">입장</button>
+</div></div>
+
+<div class="wrap" id="app" hidden>
+
+<header class="hero">
+  <button id="minBtn" class="minbtn" type="button" aria-expanded="false">💰 최소납부금액 기준 시뮬레이션 확인 ›</button>
+  <h1>아주대학교병원 계약 수익성 계산기</h1>
+  <p>가동률에 따른 일·월 검사량 · 계약금액 회수기간 · 월 순수익 분석</p>
+  <div class="warn">⚠ 해당 자료는 가안이며, 변동 가능성이 있습니다. 또한 외부 유출을 금지합니다.</div>
+  <div class="hero-actions">
+    <button id="pdfBtn" class="pdfbtn" type="button"><span class="ico" aria-hidden="true">⤓</span> 결과물 PDF로 다운로드하기</button>
+    <span class="pdfhint">현재 입력한 가동률 기준 결과가 그대로 저장됩니다</span>
+  </div>
+</header>
+
+<div class="print-only" id="printmeta"></div>
+
+<section id="minView">
+  <h2><span class="num">₩</span>최소납부금액 기준 시뮬레이션<span class="tag">Sample</span></h2>
+  <div class="grid g4" id="mfCards"></div>
+  <h3 class="sub">최소납부금액을 맞추려면 얼마나 검사해야 할까?</h3>
+  <div id="mfFormulas"></div>
+  <h3 class="sub">가동률별 최소납부금액 대비</h3>
+  <div class="scroll"><table id="mfTbl"></table></div>
+  <div class="note" style="margin-top:14px">
+    <p>※ 월 최소납부금액은 도입 병상 × 병상당 50,000원으로 고정되며, 가동률에 따라 감소하지 않습니다.</p>
+    <p>※ 운영 첫 달은 최소요금이 적용되지 않습니다.</p>
+    <p>※ 최소납부금액을 검사 사용료(대웅 수수료 = 수가 × 대웅 배분율)만으로 충당한다고 가정한 기준 검사량입니다. 수가를 수정하면 함께 바뀝니다.</p>
+  </div>
+</section>
+
+<div class="two">
+  <section>
+    <h2><span class="num">1</span>계약 조건<span class="tag">Session 1</span></h2>
+    <div class="grid g4" id="terms"></div>
+  </section>
+  <section>
+    <h2><span class="num">2</span>환자·일당 수익 구조<span class="tag">Session 2</span></h2>
+    <div class="scroll"><table id="tbl"></table></div>
+    <h3 class="sub">소모품 구성 (환자·일당)</h3>
+    <div class="scroll"><table id="tblc"></table></div>
+    <p class="note" style="margin:12px 0 0">※ 소모품 참고: 심전도기 = 전극(Electrode), 배터리(CR2450) / 산소포화도기 = 배터리(CR2450)<br>※ <b>파란 테두리 칸</b>(수가, 소모품비, 품목별 산정·금액)은 직접 수정할 수 있으며 결과에 즉시 반영됩니다. 수정값은 저장되지 않고 새로고침 시 기본값으로 돌아갑니다.</p>
+    <button id="resetBtn" type="button" class="rstbtn">기본값으로 되돌리기</button>
+  </section>
+</div>
+
+<section>
+  <h2><span class="num">3</span>기준 가동률 운영안<span class="tag">Sample</span></h2>
+  <div class="grid g4" id="minplan"></div>
+  <p class="note" style="margin-top:14px" id="minnote"></p>
+</section>
+
+<section>
+  <h2><span class="num">4</span>가동률별 시뮬레이션<span class="tag">Sample</span></h2>
+  <h3 class="sub">월 가동률 입력 (0 ~ 100%)</h3>
+  <div class="slider-row">
+    <div class="range-wrap">
+      <input type="range" id="rng" min="0" max="100" step="1" value="50" aria-label="월 가동률">
+      <div class="ticks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+    </div>
+    <div class="pctbox"><input type="number" id="pct" min="0" max="100" step="1" value="50" inputmode="numeric" aria-label="월 가동률 직접 입력"><b>%</b></div>
+  </div>
+  <div class="gauge"><i id="gauge"></i></div>
+  <p class="bedsline">가동 병상: <b id="beds"></b> <small>(도입 병상 중 실제 검사 운영 병상 비율)</small></p>
+
+  <h3 class="sub">핵심 결과</h3>
+  <div class="grid keygrid">
+    <div class="res"><small>① 하루 검사 건수</small><div class="big" id="r1"></div>
+      <p>도입 병상 × 가동률 (환자·일 기준)</p></div>
+    <div class="res"><small>② 월 검사 건수</small><div class="big" id="r2"></div>
+      <p>하루 검사 건수 × 30일</p></div>
+    <div class="res b"><small>③ 계약금액 회수 소요 기간</small><div class="big" id="r3"></div><div class="sub2" id="r3sub"></div>
+      <p>원금 ÷ 대웅 월 순수익 (소모품 반영 실질 회수)</p></div>
+    <div class="res hl"><small>④ 월 병원 순수익</small><div class="big" id="r4"></div>
+      <p>병원 배분 − 월 소모품비 (소모품 병원 부담)</p></div>
+    <div class="res wide"><small>⑤ 가동률에 따른 각 병동 검사건수 (하루 / 월)</small><div class="wards" id="wards"></div>
+      <p id="wardnote"></p></div>
+  </div>
+
+  <h3 class="sub">현재 가동률 기준 상세 계산</h3>
+  <dl id="detail"></dl>
+
+  <h3 class="sub">가동률별 비교표</h3>
+  <div class="scroll"><table id="cmp"></table></div>
+</section>
+
+<section>
+  <h2><span class="num">+</span>참고. 계산 공식<span class="tag">Formula</span></h2>
+  <details><summary>계산 방식 보기</summary><div id="formulas"></div></details>
+</section>
+
+<div class="note">
+  <p>※ 본 계산기는 제공된 계약 조건과 가정값을 기준으로 한 시뮬레이션입니다.</p>
+  <p>※ 도입 342병상 · 수가(기본 56,000원/환자·일, EX871+E7230 상급종합 합산, 부가세·삭감 미반영) · 병원 70 : 대웅 30 배분을 기준으로 하며, 세션 2의 수가·소모품비는 접속자가 수정할 수 있습니다.</p>
+  <p>※ 월 검사 건수는 도입 병상 × 가동률 × 30일(환자·일)이며, 소모품비는 검사 건수에 비례하여 병원이 부담하는 것으로 계산합니다(월평균 연속 사용 기준, 올림 미적용).</p>
+  <p>※ 계약금액(원금) 회수기간은 매월 동일 가동률을 가정한 단순 계산값이며, 실제 회수기간은 운영일수, 검사량, 정산조건 등에 따라 달라질 수 있습니다.</p>
+  <p>※ 금액·건수는 정수로 반올림하여 표시하며, 하루 검사 건수는 소수 첫째 자리까지 표시합니다(내부 계산은 원래 값 유지).</p>
+</div>
+
+<p class="foot">아주대학교병원 · 계약 수익성 계산기</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const CONSTANTS=Object.freeze({beds:342,fee:56000,hospitalShare:0.7,contractAmount:1963072500,
+batteryPrice:1000,ecgBatteryDays:3,spo2BatteryDays:1.5,electrodePrice:220,electrodePerDay:4,
+daysPerMonth:30,minimumFeePerBed:50000,baseUtil:0.5,yearsA:5,yearsB:5,consumableBearer:'병원'});
+const C=CONSTANTS;
+const COMPANY_SHARE=1-C.hospitalShare;
+const P0={battE:C.batteryPrice,ecgDays:C.ecgBatteryDays,battS:C.batteryPrice,spo2Days:C.spo2BatteryDays,elecPrice:C.electrodePrice,elecQty:C.electrodePerDay};
+let FEE=C.fee,P=Object.assign({},P0),AMT={},CONS_OVERRIDE=null;
+const safeDiv=(a,b)=>b>0?a/b:0;
+function recalcAmt(){AMT.ecg=safeDiv(P.battE,P.ecgDays);AMT.spo2=safeDiv(P.battS,P.spo2Days);AMT.elec=P.elecPrice*P.elecQty}
+recalcAmt();
+function consPerDay(){return CONS_OVERRIDE!==null?CONS_OVERRIDE:AMT.ecg+AMT.spo2+AMT.elec}
+const WARDS=[['4층 응급병동',47],['5층 서병동',49],['6층 동병동',50],['7층 서병동',52],['7층 동병동',53],['12층 동병동',44],['13층 서병동',47]]; // 합계 342병상
+const WARD_BEDS=WARDS.reduce((a,w)=>a+w[1],0);
+function wardCounts(total){ // 병동별 병상 비율로 배분, 합계가 total과 일치하도록 보정(최대잔여법)
+  const ex=WARDS.map(w=>w[1]*total/WARD_BEDS),fl=ex.map(Math.floor);
+  let rest=total-fl.reduce((a,b)=>a+b,0);
+  const order=ex.map((v,i)=>i).sort((a,b)=>(ex[b]-fl[b])-(ex[a]-fl[a])||WARDS[b][1]-WARDS[a][1]);
+  for(let k=0;k<rest;k++)fl[order[k]]++;
+  return fl;
+}
+const HOSPITAL='아주대학교병원';
+const $=id=>document.getElementById(id);
+const n=v=>Math.round(Number(v)||0).toLocaleString('ko-KR');
+const won=v=>n(v)+'원';
+const d1=v=>(Math.round(v*10)/10).toLocaleString('ko-KR',{maximumFractionDigits:1});
+const p1=v=>(Math.round(v*1000)/10).toLocaleString('ko-KR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+function monthsText(m){if(m===null)return '계산 불가';const mo=Math.round(m),y=Math.floor(mo/12),r=mo%12;
+  return r===0?`약 ${n(mo)}개월 (약 ${n(y)}년)`:`약 ${n(mo)}개월 (약 ${n(y)}년 ${n(r)}개월)`}
+function yearsText(m){if(m===null)return '-';const mo=Math.round(m),y=Math.floor(mo/12),r=mo%12;
+  return r===0?`약 ${n(y)}년`:`약 ${n(y)}년 ${n(r)}개월`}
+
+function calculateResults(u){ // u: 0~1
+  u=Math.max(0,Math.min(1,Number(u)||0));
+  const activeBeds=Math.round(C.beds*u);
+  const daily=C.beds*u;
+  const monthly=daily*C.daysPerMonth;
+  const revenue=monthly*FEE;
+  const hospitalShare=revenue*C.hospitalShare;
+  const companyFee=revenue*COMPANY_SHARE;
+  const consumables=monthly*consPerDay();
+  const companyNet=companyFee-(C.consumableBearer==='대웅'?consumables:0);
+  const hospitalNet=hospitalShare-(C.consumableBearer==='병원'?consumables:0);
+  const paybackFee=companyFee>0?C.contractAmount/companyFee:null;
+  const payback=companyNet>0?C.contractAmount/companyNet:null;
+  const cumA=companyNet*12*C.yearsA, cumB=companyNet*12*C.yearsB;
+  return {u,activeBeds,daily,monthly,revenue,hospitalShare,companyFee,consumables,companyNet,hospitalNet,
+    paybackFee,payback,cumA,cumB,ratioA:cumA/C.contractAmount,ratioB:cumB/C.contractAmount};
+}
+function breakEven(years){const perPD=FEE*COMPANY_SHARE-(C.consumableBearer==='대웅'?consPerDay():0);
+  return perPD>0?C.contractAmount/(C.beds*C.daysPerMonth*12*years*perPD):null}
+const beTxt=y=>{const v=breakEven(y);return v===null?'달성 불가':p1(v)};
+
+/* ── 정적 섹션 (일부 항목은 접속자가 수정 가능) ── */
+function buildTerms(){$('terms').innerHTML=[['도입 병상',n(C.beds)+'병상'],['심전계 / 산소포화도계','각 '+n(C.beds)+'대'],
+['수가 (EX871+E7230)',won(FEE)+'/환자·일','o'],['배분 (병원 : 대웅)',Math.round(C.hospitalShare*100)+' : '+Math.round(COMPANY_SHARE*100)],
+['계약금액 (원금)',won(C.contractAmount)],['소모품 부담',C.consumableBearer],
+['기준 가동률',Math.round(C.baseUtil*100)+'%'],['계약기간',C.yearsA===C.yearsB?C.yearsA+'년':C.yearsA+'년 / '+C.yearsB+'년']]
+.map(([a,b,c])=>`<div class="box ${c||''}"><small>${a}</small><b>${b}</b></div>`).join('')}
+const ed=(id,w)=>`<input class="ed" type="number" id="${id}" min="0" step="any" inputmode="decimal" style="width:${w}px" aria-label="수정 가능">`;
+$('tbl').innerHTML='<thead><tr><th>구분</th><th>환자·일당 금액</th></tr></thead><tbody>'+
+`<tr><td>수가 (EX871+E7230 합산)</td><td>${ed('i_fee',92)} 원</td></tr>`+
+`<tr><td>병원 배분 ${Math.round(C.hospitalShare*100)}%</td><td id="t_hs"></td></tr>`+
+`<tr><td>대웅 수수료 ${Math.round(COMPANY_SHARE*100)}%</td><td id="t_cs"></td></tr>`+
+`<tr><td>소모품비 (${C.consumableBearer} 부담)</td><td>${ed('i_cons',84)} 원</td></tr>`+
+'<tr><td>대웅 순수익</td><td id="t_cn"></td></tr>'+
+'<tr class="hl"><td>'+HOSPITAL+' 순수익</td><td id="t_hn"></td></tr></tbody>';
+$('tblc').innerHTML='<thead><tr><th>품목 / 장비</th><th>산정</th><th>금액</th></tr></thead><tbody>'+
+`<tr><td>배터리 CR2450 / 심전계</td><td>${ed('i_pe',64)}원 ÷ ${ed('i_de',50)}일</td><td>${ed('i_ae',76)}원</td></tr>`+
+`<tr><td>배터리 CR2450 / 산소포화도계</td><td>${ed('i_ps',64)}원 ÷ ${ed('i_ds',50)}일</td><td>${ed('i_as',76)}원</td></tr>`+
+`<tr><td>전극(Electrode) / 심전계</td><td>${ed('i_pl',64)}원 × ${ed('i_ql',50)}개/일</td><td>${ed('i_al',76)}원</td></tr>`+
+'<tr class="hl"><td>합계</td><td>환자·일당</td><td id="t_cons"></td></tr></tbody>';
+
+function buildFormulas(){const cp=consPerDay();
+$('formulas').innerHTML=[
+`① 월 검사 건수 : ${n(C.beds)}병상 × 가동률 × ${C.daysPerMonth}일 (하루 검사 건수 = ${n(C.beds)}병상 × 가동률)`,
+`② 월 청구매출 : 월 검사 건수 × ${n(FEE)}원`,
+`③ 병원 배분 : 월 청구매출 × ${Math.round(C.hospitalShare*100)}% / 대웅 수수료 : 월 청구매출 × ${Math.round(COMPANY_SHARE*100)}%`,
+`④ 월 소모품비 : 월 검사 건수 × ${n(cp)}원 (${C.consumableBearer} 부담)`,
+`⑤ 대웅 월 순수익 : 대웅 수수료${C.consumableBearer==='대웅'?' − 월 소모품비':''} / 월 ${HOSPITAL} 순수익 : 병원 배분${C.consumableBearer==='병원'?' − 월 소모품비':''}`,
+`⑥ 계약금액 회수기간 : ${n(C.contractAmount)}원 ÷ 대웅 월 순수익 (수수료 기준은 ÷ 대웅 수수료)`,
+`⑦ ${C.yearsA}년·${C.yearsB}년 누계 순수익 : 대웅 월 순수익 × 12 × 계약기간 → 원금 대비 %`,
+`⑧ 손익분기 가동률 : 원금 ÷ (병상 × ${C.daysPerMonth}일 × 12 × 계약기간 × 환자·일당 대웅 순수익)`].map(t=>`<div class="f">${t}</div>`).join('')}
+
+function buildMinFee(){
+  const MF=C.beds*C.minimumFeePerBed,unit=FEE*COMPANY_SHARE;
+  const mm=unit>0?Math.ceil(MF/unit):null,md=mm===null?null:Math.ceil(mm/C.daysPerMonth);
+  const cnt=v=>v===null?'계산 불가':n(v)+'건';
+  $('mfCards').innerHTML=[['월 최소납부금액',won(MF),'o'],['건당 대웅 수수료',won(unit)],
+   ['월 최소 검사 건수',mm===null?'계산 불가':n(mm)+'건/월','o'],['하루 최소 검사 건수',md===null?'계산 불가':n(md)+'건/일','o'],
+   ['필요 최소 가동률',md===null?'-':p1(md/C.beds)],['운영 첫 달','최소요금 제외']]
+   .map(([a,b,c])=>`<div class="box ${c||''}"><small>${a}</small><b>${b}</b></div>`).join('');
+  $('mfFormulas').innerHTML=[
+   `① 월 최소납부금액 : ${n(C.beds)}병상 × ${n(C.minimumFeePerBed)}원 = <b>${n(MF)}원</b>`,
+   `② 건당 대웅 수수료 : ${n(FEE)}원 × ${Math.round(COMPANY_SHARE*100)}% = <b>${n(unit)}원</b>`,
+   `③ 월 최소 검사 건수 : ${n(MF)}원 ÷ ${n(unit)}원 = ${unit>0?(MF/unit).toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2}):'-'}건 → <b>${cnt(mm)}</b> (올림)`,
+   `④ 하루 최소 검사 건수 : ${cnt(mm)} ÷ ${C.daysPerMonth}일 = ${mm===null?'-':(mm/C.daysPerMonth).toFixed(2)}건 → <b>${cnt(md)}</b> (올림)`,
+   `⑤ 필요 최소 가동률 : ${cnt(md)} ÷ ${n(C.beds)}병상 = <b>${md===null?'-':p1(md/C.beds)}</b>`].map(t=>`<div class="f">${t}</div>`).join('');
+  let h='<thead><tr><th>가동률</th><th>하루 검사건수</th><th>월 검사건수</th><th>월 대웅 수수료</th><th>월 최소납부금액</th><th>차액</th><th>판정</th></tr></thead><tbody>';
+  [3,5,8,10,15,20,30,50].forEach(pc=>{const r=calculateResults(pc/100),diff=r.companyFee-MF;
+   h+=`<tr${pc===Math.round(C.baseUtil*100)?' class="hl"':''}><td>${pc}%</td><td>${d1(r.daily)}건</td><td>${n(r.monthly)}건</td><td>${won(r.companyFee)}</td><td>${won(MF)}</td><td>${diff<0?'−':'+'}${won(Math.abs(diff))}</td><td>${diff>=0?'충족':'미달'}</td></tr>`});
+  $('mfTbl').innerHTML=h+'</tbody>';
+}
+function refreshTables(){
+  const set=(id,v)=>{const el=$(id);if(el&&document.activeElement!==el)el.value=Math.round(v*100)/100};
+  const cp=consPerDay();
+  set('i_fee',FEE);set('i_cons',cp);set('i_pe',P.battE);set('i_de',P.ecgDays);set('i_ps',P.battS);set('i_ds',P.spo2Days);
+  set('i_pl',P.elecPrice);set('i_ql',P.elecQty);set('i_ae',AMT.ecg);set('i_as',AMT.spo2);set('i_al',AMT.elec);
+  $('t_hs').textContent=won(FEE*C.hospitalShare);$('t_cs').textContent=won(FEE*COMPANY_SHARE);
+  $('t_cn').textContent=won(FEE*COMPANY_SHARE-(C.consumableBearer==='대웅'?cp:0));
+  $('t_hn').textContent=won(FEE*C.hospitalShare-(C.consumableBearer==='병원'?cp:0));
+  $('t_cons').textContent=won(cp);
+}
+function refreshAll(){refreshTables();buildMinFee();buildTerms();buildFormulas();buildMin();buildCmp();render(Number($('rng').value)||0)}
+const numOf=id=>{const v=parseFloat($(id).value);return isFinite(v)&&v>=0?v:0};
+function bind(id,fn){$(id).addEventListener('input',()=>{fn(numOf(id));refreshAll()})}
+const reE=()=>{AMT.ecg=safeDiv(P.battE,P.ecgDays);CONS_OVERRIDE=null};
+const reS=()=>{AMT.spo2=safeDiv(P.battS,P.spo2Days);CONS_OVERRIDE=null};
+const reL=()=>{AMT.elec=P.elecPrice*P.elecQty;CONS_OVERRIDE=null};
+bind('i_fee',v=>{FEE=v});bind('i_cons',v=>{CONS_OVERRIDE=v});
+bind('i_pe',v=>{P.battE=v;reE()});bind('i_de',v=>{P.ecgDays=v;reE()});bind('i_ae',v=>{AMT.ecg=v;CONS_OVERRIDE=null});
+bind('i_ps',v=>{P.battS=v;reS()});bind('i_ds',v=>{P.spo2Days=v;reS()});bind('i_as',v=>{AMT.spo2=v;CONS_OVERRIDE=null});
+bind('i_pl',v=>{P.elecPrice=v;reL()});bind('i_ql',v=>{P.elecQty=v;reL()});bind('i_al',v=>{AMT.elec=v;CONS_OVERRIDE=null});
+$('resetBtn').addEventListener('click',()=>{FEE=C.fee;P=Object.assign({},P0);recalcAmt();CONS_OVERRIDE=null;refreshAll()});
+buildTerms();buildFormulas();refreshTables();buildMinFee();
+
+function pop(el){const p=el.closest('.res');if(!p)return;p.classList.add('pop');setTimeout(()=>p.classList.remove('pop'),220)}
+function setT(id,t){if($(id).textContent!==t){$(id).textContent=t;pop($(id))}}
+
+function render(pct){
+  pct=Math.max(0,Math.min(100,Math.round(Number(pct)||0)));
+  const r=calculateResults(pct/100);
+  $('beds').textContent=n(r.activeBeds)+'병상';
+  setT('r1',d1(r.daily)+'건/일'); setT('r2',n(r.monthly)+'건/월');
+  setT('r3',r.payback===null?'계산 불가':'약 '+n(r.payback)+'개월');
+  $('r3sub').textContent=r.payback===null?'가동률 0% — 회수 대상 수익 없음':'약 '+yearsText(r.payback).replace('약 ','');
+  setT('r4',won(r.hospitalNet));
+  const wc=wardCounts(Math.round(r.daily)),wm=wardCounts(Math.round(r.monthly));
+  $('wards').innerHTML=WARDS.map((w,i)=>`<div><span>${w[0]}<small>${n(w[1])}병상</small></span><b>${n(wc[i])}건 / ${n(wm[i])}건</b></div>`).join('');
+  $('wardnote').textContent=`합계 ${n(Math.round(r.daily))}건/일 · ${n(Math.round(r.monthly))}건/월 · 병동별 병상 수 × 가동률(${pct}%)로 계산하며(월은 × 30일), 합계가 맞도록 소수점은 보정하여 반올림합니다.`;
+  $('gauge').style.width=pct+'%';
+  $('detail').innerHTML=[['현재 가동률',pct+'%'],['가동 병상',n(r.activeBeds)+'병상'],
+   ['하루 검사 건수',d1(r.daily)+'건'],['월 검사 건수',n(r.monthly)+'건'],
+   ['월 청구매출',won(r.revenue)],['월 '+HOSPITAL+' 순수익',won(r.hospitalNet)],
+   ['대웅 수수료 (월)',won(r.companyFee)],['월 소모품비',won(r.consumables)],['대웅 월 순수익',won(r.companyNet)],
+   ['계약금액(원금)',won(C.contractAmount)],['회수기간 (수수료 기준)',monthsText(r.paybackFee)],['회수기간 (순수익 기준)',monthsText(r.payback)],
+   [C.yearsA+'년 누계 순수익',won(r.cumA)+' ('+p1(r.ratioA)+')'],C.yearsB!==C.yearsA&&[C.yearsB+'년 누계 순수익',won(r.cumB)+' ('+p1(r.ratioB)+')']].filter(Boolean)
+   .map(([a,b])=>`<div><dt>${a}</dt><dd>${b}</dd></div>`).join('');
+}
+function buildMin(){
+  const r=calculateResults(C.baseUtil);
+  $('minplan').innerHTML=[['기준 가동률',Math.round(C.baseUtil*100)+'%','o'],['하루 검사 건수',d1(r.daily)+'건/일','o'],['월 검사 건수',n(r.monthly)+'건/월','o'],
+   ['월 청구매출',won(r.revenue)],['월 '+HOSPITAL+' 순수익',won(r.hospitalNet)],['대웅 월 순수익',won(r.companyNet)],
+   ['회수기간 (순수익 기준)',monthsText(r.payback)],['손익분기 가동률',(C.yearsA===C.yearsB?C.yearsA+'년 '+beTxt(C.yearsA):C.yearsA+'년 '+beTxt(C.yearsA)+' / '+C.yearsB+'년 '+beTxt(C.yearsB))]]
+   .map(([a,b,c])=>`<div class="box ${c||''}"><small>${a}</small><b>${b}</b></div>`).join('');
+  $('minnote').textContent=`사용량비례형 도입처 평균 수준인 기준 가동률 ${Math.round(C.baseUtil*100)}%에서의 운영안입니다. 손익분기 가동률은 해당 계약기간 내 원금을 회수하기 위한 최소 가동률입니다.`;
+}
+function buildCmp(){
+  let h='<thead><tr><th>가동률</th><th>가동 병상</th><th>하루 검사건수</th><th>월 검사건수</th><th>월 청구매출</th><th>월 '+HOSPITAL+' 순수익</th>'+
+   '<th>대웅 월 순수익</th><th>'+C.yearsA+'년 원금대비</th>'+(C.yearsB!==C.yearsA?'<th>'+C.yearsB+'년 원금대비</th>':'')+'<th>회수기간</th></tr></thead><tbody>';
+  [30,35,38,40,45,50,60,70,80].forEach(p=>{const r=calculateResults(p/100);
+   h+=`<tr${p===Math.round(C.baseUtil*100)?' class="hl"':''}><td>${p}%</td><td>${n(r.activeBeds)}병상</td><td>${d1(r.daily)}건</td><td>${n(r.monthly)}건</td>`+
+   `<td>${won(r.revenue)}</td><td>${won(r.hospitalNet)}</td><td>${won(r.companyNet)}</td><td>${p1(r.ratioA)}</td>${C.yearsB!==C.yearsA?`<td>${p1(r.ratioB)}</td>`:''}<td>${monthsText(r.payback)}</td></tr>`});
+  $('cmp').innerHTML=h+'</tbody>';
+}
+function sync(v){
+  v=Math.max(0,Math.min(100,Math.round(Number(v)||0)));
+  $('rng').value=v; if(document.activeElement!==$('pct'))$('pct').value=v; render(v);
+}
+$('rng').addEventListener('input',e=>sync(e.target.value));
+$('pct').addEventListener('input',e=>{const raw=e.target.value;if(raw==='')return;
+  const num=Math.round(Number(raw));if(num>100||num<0){e.target.value=Math.max(0,Math.min(100,num))}sync(e.target.value)});
+$('pct').addEventListener('change',e=>sync(e.target.value));
+$('pct').addEventListener('blur',()=>{$('pct').value=$('rng').value});
+
+/* ── PDF ── */
+function printMeta(){
+  const pct=Math.max(0,Math.min(100,Math.round(Number($('rng').value)||0)));
+  const d=new Date(),pad=v=>String(v).padStart(2,'0');
+  const stamp=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  $('printmeta').textContent=`기준 가동률 ${pct}% · 출력일시 ${stamp} · 본 자료는 가안이며 외부 유출을 금지합니다.`;
+}
+async function exportPdf(){
+  printMeta();
+  const hint=document.querySelector('.pdfhint'),btn=$('pdfBtn'),orig=hint?hint.textContent:'';
+  const say=t=>{if(hint)hint.textContent=t};
+  const ds=Array.prototype.slice.call(document.querySelectorAll('details'));
+  ds.forEach(d=>{d.dataset.wasOpen=d.open?'1':'0';d.open=true});
+  const restore=()=>ds.forEach(d=>{d.open=d.dataset.wasOpen==='1'});
+  let dl=null;
+  try{if(window.claude&&claude.use)dl=await claude.use('downloads')}catch(e){}
+  if(dl&&window.html2canvas&&window.jspdf){
+    btn.disabled=true;say('PDF 생성 중...');
+    try{
+      const pm=$('printmeta');pm.style.display='block';
+      const canvas=await html2canvas($('app'),{scale:2,backgroundColor:getComputedStyle(document.body).backgroundColor||'#ffffff',
+        ignoreElements:el=>el.classList&&el.classList.contains('hero-actions')});
+      pm.style.display='';
+      const {jsPDF}=window.jspdf,pdf=new jsPDF('p','mm','a4'),pw=210,ph=297;
+      const pagePx=Math.floor(canvas.width*ph/pw);
+      for(let y=0,i=0;y<canvas.height;y+=pagePx,i++){
+        const h=Math.min(pagePx,canvas.height-y),c=document.createElement('canvas');
+        c.width=canvas.width;c.height=h;
+        const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,h);g.drawImage(canvas,0,y,canvas.width,h,0,0,canvas.width,h);
+        if(i>0)pdf.addPage();
+        pdf.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',0,0,pw,h*pw/canvas.width);
+      }
+      const pct=Math.round(Number($('rng').value)||0);
+      await dl.save({filename:`${HOSPITAL}_계약수익성_가동률${pct}%.pdf`,data:pdf.output('blob')});
+      say('PDF 저장 요청 완료');setTimeout(()=>say(orig),2500);
+    }catch(e){
+      if(e&&e.code==='declined'){say(orig)}
+      else{say('PDF 생성에 실패했습니다. 다시 시도해 주세요.');setTimeout(()=>say(orig),3500)}
+    }finally{btn.disabled=false;restore()}
+    return;
+  }
+  // 폴백: 브라우저 인쇄 → PDF로 저장 (파일로 직접 연 경우 등)
+  const after=()=>{restore();window.removeEventListener('afterprint',after)};
+  window.addEventListener('afterprint',after);
+  window.setTimeout(()=>window.print(),80);
+}
+$('pdfBtn').addEventListener('click',exportPdf);
+$('minBtn').addEventListener('click',()=>{
+  const on=$('app').classList.toggle('minmode');
+  $('minBtn').textContent=on?'← 계산기로 돌아가기':'💰 최소납부금액 기준 시뮬레이션 확인 ›';
+  $('minBtn').setAttribute('aria-expanded',on?'true':'false');
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+/* ── 비밀번호 게이트 ── */
+const KEY='YWp vdTIwMjY='.replace(' ','');
+function unlock(){$('lock').hidden=true;$('lock').style.display='none';$('app').hidden=false;buildMin();buildCmp();sync(Math.round(C.baseUtil*100))}
+function tryLogin(){
+  if(btoa($('pw').value)===KEY){try{localStorage.setItem('auth_ok','1')}catch(e){}unlock()}
+  else{$('err').textContent='비밀번호가 올바르지 않습니다.';$('pw').value='';$('pw').focus()}
+}
+$('go').addEventListener('click',tryLogin);
+$('pw').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin()});
+let ok=false;try{ok=localStorage.getItem('auth_ok')==='1'}catch(e){}
+if(ok)unlock();
+</script>
+</body>
+</html>
